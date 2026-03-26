@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Street Fighter - Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="arcade-title">STREET FIGHTER</h1>
+        
+        <div class="scoreboard">
+            <div class="player-info">
+                <h2 class="player-name">PLAYER 1<br><span class="fighter-name">RYU</span></h2>
+                <div class="health-bar-container">
+                    <div class="health-bar" id="healthBar1"></div>
+                </div>
+                <p class="health-text" id="health1">100 / 100</p>
+            </div>
+            
+            <div class="round-info">
+                <p class="round" id="round">ROUND 1</p>
+                <p class="status" id="status">FIGHT!</p>
+            </div>
+            
+            <div class="player-info">
+                <h2 class="player-name">PLAYER 2<br><span class="fighter-name">KEN</span></h2>
+                <div class="health-bar-container">
+                    <div class="health-bar" id="healthBar2"></div>
+                </div>
+                <p class="health-text" id="health2">100 / 100</p>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <div class="controls-panel">
+            <div class="player-controls">
+                <h3>PLAYER 1 CONTROLS</h3>
+                <p><strong>W/A/S/D</strong> - Move</p>
+                <p><strong>SPACE</strong> - Attack</p>
+                <p><strong>Q</strong> - Special Move</p>
+            </div>
+            
+            <div class="game-buttons">
+                <button id="startBtn" class="arcade-btn">START GAME</button>
+                <button id="resetBtn" class="arcade-btn">RESET</button>
+            </div>
+            
+            <div class="player-controls">
+                <h3>PLAYER 2 CONTROLS</h3>
+                <p><strong>↑↓←→</strong> - Move</p>
+                <p><strong>ENTER</strong> - Attack</p>
+                <p><strong>P</strong> - Special Move</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
