@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nightmare Maze - 3D Horror Escape</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border: 2px solid #8b0000;
+            border-radius: 5px;
+        }
+
+        .hud-item {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .hud-label {
+            color: #ff4444;
+            font-weight: bold;
+        }
+
+        #inventory {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border: 2px solid #8b0000;
+            border-radius: 5px;
+        }
+
+        #inventory h3 {
+            color: #ff4444;
+            margin-bottom: 10px;
+        }
+
+        .item-slot {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 2px solid #555;
+            margin: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .item-slot.collected {
+            border-color: #00ff00;
+            background: rgba(0, 100, 0, 0.3);
+        }
+
+        #messages {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 24px;
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        #startScreen, #winScreen, #loseScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 100;
+        }
+
+        #startScreen h1, #winScreen h1, #loseScreen h1 {
+            font-size: 48px;
+            color: #ff0000;
+            text-shadow: 0 0 20px #ff0000;
+            margin-bottom: 20px;
+        }
+
+        #startScreen p, #winScreen p, #loseScreen p {
+            font-size: 18px;
+            margin: 10px 0;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #8b0000;
+            color: #fff;
+            border: 2px solid #ff0000;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #ff0000;
+            box-shadow: 0 0 20px #ff0000;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #jumpscare {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: none;
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #jumpscare img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #flashlight {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border: 2px solid #8b0000;
+            border-radius: 5px;
+        }
+
+        #flashlightBar {
+            width: 150px;
+            height: 20px;
+            background: #333;
+            border: 2px solid #555;
+            margin-top: 5px;
+        }
+
+        #flashlightFill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #ff0000, #ffff00, #00ff00);
+            transition: width 0.1s;
+        }
+
+        #minimap {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #8b0000;
+            border-radius: 5px;
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(139, 0, 0, 0.3);
+            border: 1px solid #8b0000;
+            border-radius: 5px;
+        }
+
+        .controls-info h3 {
+            color: #ff4444;
+            margin-bottom: 10px;
+        }
+
+        .key {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 3px;
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui">
+            <div id="hud">
+                <div class="hud-item">
+                    <span class="hud-label">SANITY:</span>
+                    <span id="sanityValue">100%</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">ITEMS:</span>
+                    <span id="itemsCollected">0/5</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">TIME:</span>
+                    <span id="timeValue">00:00</span>
+                </div>
+            </div>
+
+            <div id="inventory">
+                <h3>INVENTORY</h3>
+                <div id="itemSlots">
+                    <div class="item-slot" id="slot0">📄</div>
+                    <div class="item-slot" id="slot1">🔑</div>
+                    <div class="item-slot" id="slot2">💀</div>
+                    <div class="item-slot" id="slot3">🕯️</div>
+                    <div class="item-slot" id="slot4">📖</div>
+                </div>
+            </div>
+
+            <div id="flashlight">
+                <span class="hud-label">FLASHLIGHT</span>
+                <div id="flashlightBar">
+                    <div id="flashlightFill"></div>
+                </div>
+            </div>
+
+            <div id="minimap">
+                <canvas id="minimapCanvas" width="150" height="150"></canvas>
+            </div>
+
+            <div id="messages"></div>
+        </div>
+
+        <div id="startScreen">
+            <h1>NIGHTMARE MAZE</h1>
+            <p>You are trapped in a cursed mansion. Collect all 5 haunted artifacts to break the curse and escape!</p>
+            <p>But beware... something hunts you in the darkness. Keep your sanity high and don't let it catch you.</p>
+            
+            <div class="controls-info">
+                <h3>CONTROLS</h3>
+                <p><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> - Move</p>
+                <p><span class="key">Mouse</span> - Look Around</p>
+                <p><span class="key">F</span> - Toggle Flashlight</p>
+                <p><span class="key">Shift</span> - Sprint (uses battery faster)</p>
+                <p><span class="key">E</span> - Interact / Pick up items</p>
+            </div>
+
+            <button id="startBtn">ENTER THE MAZE</button>
+        </div>
+
+        <div id="winScreen" class="hidden">
+            <h1>ESCAPED!</h1>
+            <p>You collected all the artifacts and broke the curse!</p>
+            <p>The mansion's doors open as the morning sun rises...</p>
+            <p id="winStats"></p>
+            <button id="playAgainBtn">PLAY AGAIN</button>
+        </div>
+
+        <div id="loseScreen" class="hidden">
+            <h1>CAUGHT!</h1>
+            <p>The entity has claimed another soul...</p>
+            <p>Your body will remain in these walls forever.</p>
+            <button id="tryAgainBtn">TRY AGAIN</button>
+        </div>
+
+        <div id="jumpscare">
+            <canvas id="jumpscareCanvas"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Game Configuration
+        const CONFIG = {
+            mazeSize: 21, // Must be odd number
+            cellSize: 4,
+            wallHeight: 5,
+            playerSpeed: 8,
+            sprintSpeed: 14,
+            enemySpeed: 3.5,
+            sanityDrain: 0.5,
+            flashlightDrain: 0.3,
+            sprintDrain: 0.8,
+            flashlightRecharge: 0.2,
+            totalItems: 5,
+            winTime: 180 // 3 minutes to win
+        };
+
+        // Game State
+        let gameState = {
+            isPlaying: false,
+            sanity: 100,
+            itemsCollected: [],
+            flashlightOn: true,
+            flashlightBattery: 100,
+            startTime: 0,
+            elapsedTime: 0,
+            won: false,
+            lost: false
+        };
+
+        // Three.js variables
+        let scene, camera, renderer;
+        let player, enemy;
+        let maze = [];
+        let items = [];
+        let walls = [];
+        let clock = new THREE.Clock();
+        let keys = {};
+        let mouseMovement = { x: 0, y: 0 };
+        let isPointerLocked = false;
+
+        // DOM Elements
+        const startScreen = document.getElementById('startScreen');
+        const winScreen = document.getElementById('winScreen');
+        const loseScreen = document.getElementById('loseScreen');
+        const jumpscareDiv = document.getElementById('jumpscare');
+        const messagesDiv = document.getElementById('messages');
+        const sanityValue = document.getElementById('sanityValue');
+        const itemsCollectedSpan = document.getElementById('itemsCollected');
+        const timeValue = document.getElementById('timeValue');
+        const flashlightFill = document.getElementById('flashlightFill');
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
+
+        // Item types
+        const ITEM_TYPES = [
+            { symbol: '📄', name: 'Cursed Letter', color: 0xffffff },
+            { symbol: '🔑', name: 'Skeleton Key', color: 0xffd700 },
+            { symbol: '💀', name: 'Death Mask', color: 0x8b0000 },
+            { symbol: '🕯️', name: 'Witch Candle', color: 0xff6600 },
+            { symbol: '📖', name: 'Grimoire', color: 0x4b0082 }
+        ];
+
+        // Initialize Three.js
+        function init() {
+            const canvas = document.getElementById('gameCanvas');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            scene.fog = new THREE.FogExp2(0x000000, 0.03);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.7, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x111111);
+            scene.add(ambientLight);
+
+            // Player flashlight
+            player = new THREE.Group();
+            player.add(camera);
+            scene.add(player);
+
+            // Flashlight spotlight
+            const flashlight = new THREE.SpotLight(0xffffee, 1, 30, Math.PI / 4, 0.5, 1);
+            flashlight.position.set(0, 0, 0);
+            flashlight.target.position.set(0, 0, -1);
+            camera.add(flashlight);
+            camera.add(flashlight.target);
+            player.flashlight = flashlight;
+
+            // Generate maze
+            generateMaze();
+            buildMazeWalls();
+            spawnItems();
+            spawnEnemy();
+
+            // Event listeners
+            setupEventListeners();
+
+            // Start render loop
+            animate();
+        }
+
+        // Maze Generation (Recursive Backtracker)
+        function generateMaze() {
+            const size = CONFIG.mazeSize;
+            maze = [];
+
+            // Initialize maze with walls
+            for (let y = 0; y < size; y++) {
+                maze[y] = [];
+                for (let x = 0; x < size; x++) {
+                    maze[y][x] = 1; // Wall
+                }
+            }
+
+            // Recursive backtracker
+            function carve(x, y) {
+                maze[y][x] = 0; // Path
+
+                const directions = [
+                    [0, -2], [0, 2], [-2, 0], [2, 0]
+                ].sort(() => Math.random() - 0.5);
+
+                for (const [dx, dy] of directions) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+
+                    if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && maze[ny][nx] === 1) {
+                        maze[y + dy/2][x + dx/2] = 0;
+                        carve(nx, ny);
+                    }
+                }
+            }
+
+            carve(1, 1);
+
+            // Add some loops for variety
+            for (let i = 0; i < CONFIG.mazeSize * 2; i++) {
+                const x = Math.floor(Math.random() * (CONFIG.mazeSize - 2)) + 1;
+                const y = Math.floor(Math.random() * (CONFIG.mazeSize - 2)) + 1;
+                if (maze[y][x] === 1) {
+                    const neighbors = [
+                        [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+                    ].filter(([nx, ny]) => maze[ny] && maze[ny][nx] === 0);
+                    
+                    if (neighbors.length >= 2) {
+                        maze[y][x] = 0;
+                    }
+                }
+            }
+
+            // Ensure start and end are clear
+            maze[1][1] = 0;
+            maze[CONFIG.mazeSize - 2][CONFIG.mazeSize - 2] = 0;
+        }
+
+        // Build 3D walls
+        function buildMazeWalls() {
+            // Clear existing walls
+            walls.forEach(wall => scene.remove(wall));
+            walls = [];
+
+            const wallGeometry = new THREE.BoxGeometry(CONFIG.cellSize, CONFIG.wallHeight, CONFIG.cellSize);
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x2a2a2a,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+
+            for (let y = 0; y < CONFIG.mazeSize; y++) {
+                for (let x = 0; x < CONFIG.mazeSize; x++) {
+                    if (maze[y][x] === 1) {
+                        const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+                        wall.position.set(
+                            x * CONFIG.cellSize - CONFIG.mazeSize * CONFIG.cellSize / 2,
+                            CONFIG.wallHeight / 2,
+                            y * CONFIG.cellSize - CONFIG.mazeSize * CONFIG.cellSize / 2
+                        );
+                        wall.castShadow = true;
+                        wall.receiveShadow = true;
+                        scene.add(wall);
+                        walls.push(wall);
+                    }
+                }
+            }
+
+            // Add floor
+            const floorGeometry = new THREE.PlaneGeometry(
+                CONFIG.mazeSize * CONFIG.cellSize,
+                CONFIG.mazeSize * CONFIG.cellSize
+            );
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1a1a,
+                roughness: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = 0;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            walls.push(floor);
+
+            // Add ceiling
+            const ceiling = new THREE.Mesh(floorGeometry, floorMaterial);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = CONFIG.wallHeight;
+            scene.add(ceiling);
+            walls.push(ceiling);
+        }
+
+        // Spawn collectible items
+        function spawnItems() {
+            // Clear existing items
+            items.forEach(item => scene.remove(item.mesh));
+            items = [];
+
+            // Find valid positions (paths, not walls)
+            const validPositions = [];
+            for (let y = 1; y < CONFIG.mazeSize - 1; y++) {
+                for (let x = 1; x < CONFIG.mazeSize - 1; x++) {
+                    if (maze[y][x] === 0 && !(x === 1 && y === 1)) {
+                        validPositions.push({ x, y });
+                    }
+                }
+            }
+
+            // Shuffle and pick positions
+            validPositions.sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < CONFIG.totalItems && i < validPositions.length; i++) {
+                const pos = validPositions[i];
+                const itemType = ITEM_TYPES[i % ITEM_TYPES.length];
+
+                // Create item geometry
+                const geometry = new THREE.OctahedronGeometry(0.3);
+                const material = new THREE.MeshStandardMaterial({
+                    color: itemType.color,
+                    emissive: itemType.color,
+                    emissiveIntensity: 0.5,
+                    transparent: true,
+                    opacity: 0.9
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(
+                    pos.x * CONFIG.cellSize - CONFIG.mazeSize * CONFIG.cellSize / 2,
+                    1,
+                    pos.y * CONFIG.cellSize - CONFIG.mazeSize * CONFIG.cellSize / 2
+                );
+
+                // Add point light
+                const light = new THREE.PointLight(itemType.color, 0.5, 5);
+                light.position.copy(mesh.position);
+                scene.add(light);
+
+                scene.add(mesh);
+                items.push({
+                    mesh: mesh,
+                    light: light,
+                    type: itemType,
+                    collected: false,
+                    originalY: 1
+                });
+            }
+        }
+
+        // Spawn enemy
+        function spawnEnemy() {
+            if (enemy) {
+                scene.remove(enemy);
+            }
+
+            const enemyGeometry = new THREE.CapsuleGeometry(0.5, 1.5, 4, 8);
+            const enemyMaterial = new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                emissive: 0x330000,
+                emissiveIntensity: 0.3
+            });
+
+            enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+            
+            // Position enemy far from player
+            const enemyPos = getValidPosition();
+            enemy.position.set(
+                enemyPos.x * CONFIG.cellSize - CONFIG.mazeSize * CONFIG.cellSize / 2,
+                1,
+                enemyPos.y * CONFIG.cellSize - CONFIG.mazeSize * CONFIG.cellSize / 2
+            );
+
+            // Enemy eyes
+            const eyeGeometry = new THREE.SphereGeometry(0.1);
+            const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.2, 0.3, 0.4);
+            enemy.add(leftEye);
+
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(0.2, 0.3, 0.4);
+            enemy.add(rightEye);
+
+            enemy.castShadow = true;
+            scene.add(enemy);
+        }
+
+        // Get random valid position
+        function getValidPosition() {
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * CONFIG.mazeSize);
+                y = Math.floor(Math.random() * CONFIG.mazeSize);
+            } while (maze[y][x] !== 0 || (x === 1 && y === 1));
+            return { x, y };
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                
+                if (e.code === 'KeyF' && gameState.isPlaying) {
+                    gameState.flashlightOn = !gameState.flashlightOn;
+                    player.flashlight.intensity = gameState.flashlightOn ? 1 : 0;
+                }
+                
+                if (e.code === 'KeyE' && gameState.isPlaying) {
+                    tryPickupItem();
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isPointerLocked && gameState.isPlaying) {
+                    mouseMovement.x += e.movementX;
+                    mouseMovement.y += e.movementY;
+                }
+            });
+
+            document.getElementById('gameCanvas').addEventListener('click', () => {
+                if (gameState.isPlaying && !isPointerLocked) {
+                    document.getElementById('gameCanvas').requestPointerLock();
+                }
+            });
+
+            document.addEventListener('pointerlockchange', () => {
+                isPointerLocked = document.pointerLockElement === document.getElementById('gameCanvas');
+            });
+
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+            document.getElementById('tryAgainBtn').addEventListener('click', resetGame);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Start game
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameState.isPlaying = true;
+            gameState.startTime = Date.now();
+            gameState.sanity = 100;
+            gameState.itemsCollected = [];
+            gameState.flashlightBattery = 100;
+            gameState.won = false;
+            gameState.lost = false;
+            
+            // Reset player position
+            player.position.set(
+                1 * CONFIG.cellSize - CONFIG.mazeSize * CONFIG.cellSize / 2,
+                0,
+                1 * CONFIG.cellSize - CONFIG.mazeSize * CONFIG.cellSize / 2
+            );
+            
+            // Reset enemy position
+            spawnEnemy();
+            
+            // Reset items
+            spawnItems();
+            
+            updateUI();
+            showMessage("Collect all artifacts to escape!");
+            
+            document.getElementById('gameCanvas').requestPointerLock();
+        }
+
+        // Reset game
+        function resetGame() {
+            winScreen.classList.add('hidden');
+            loseScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            gameState.isPlaying = false;
+        }
+
+        // Try to pickup item
+        function tryPickupItem() {
+            const playerPos = player.position;
+            
+            for (const item of items) {
+                if (item.collected) continue;
+                
+                const distance = playerPos.distanceTo(item.mesh.position);
+                if (distance < 2) {
+                    item.collected = true;
+                    item.mesh.visible = false;
+                    item.light.intensity = 0;
+                    gameState.itemsCollected.push(item.type);
+                    
+                    showMessage(`Found: ${item.type.name}!`);
+                    updateUI();
+                    
+                    // Check win condition
+                    if (gameState.itemsCollected.length >= CONFIG.totalItems) {
+                        setTimeout(winGame, 1000);
+                    }
+                    
+                    break;
+                }
+            }
+        }
+
+        // Show message
+        function showMessage(text, duration = 2000) {
+            messagesDiv.textContent = text;
+            messagesDiv.style.opacity = 1;
+            
+            setTimeout(() => {
+                messagesDiv.style.opacity = 0;
+            }, duration);
+        }
+
+        // Update UI
+        function updateUI() {
+            sanityValue.textContent = Math.floor(gameState.sanity) + '%';
+            sanityValue.style.color = gameState.sanity > 50 ? '#00ff00' : gameState.sanity > 25 ? '#ffff00' : '#ff0000';
+            
+            itemsCollectedSpan.textContent = `${gameState.itemsCollected.length}/${CONFIG.totalItems}`;
+            
+            flashlightFill.style.width = gameState.flashlightBattery + '%';
+            
+            // Update inventory slots
+            for (let i = 0; i < CONFIG.totalItems; i++) {
+                const slot = document.getElementById(`slot${i}`);
+                if (i < gameState.itemsCollected.length) {
+                    slot.classList.add('collected');
+                    slot.textContent = gameState.itemsCollected[i].symbol;
+                } else {
+                    slot.classList.remove('collected');
+                    slot.textContent = ITEM_TYPES[i].symbol;
+                }
+            }
+        }
+
+        // Update time display
+        function updateTime() {
+            if (!gameState.isPlaying) return;
+            
+            gameState.elapsedTime = (Date.now() - gameState.startTime) / 1000;
+            const minutes = Math.floor(gameState.elapsedTime / 60);
+            const seconds = Math.floor(gameState.elapsedTime % 60);
+            timeValue.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Check time limit
+            if (gameState.elapsedTime > CONFIG.winTime) {
+                loseGame("Time ran out! The curse consumes you...");
+            }
+        }
+
+        // Win game
+        function winGame() {
+            gameState.won = true;
+            gameState.isPlaying = false;
+            document.exitPointerLock();
+            
+            const stats = `Time: ${timeValue.textContent} | Sanity: ${Math.floor(gameState.sanity)}%`;
+            document.getElementById('winStats').textContent = stats;
+            
+            winScreen.classList.remove('hidden');
+        }
+
+        // Lose game
+        function loseGame(reason) {
+            gameState.lost = true;
+            gameState.isPlaying = false;
+            document.exitPointerLock();
+            
+            showMessage(reason);
+            showJumpscare();
+            
+            setTimeout(() => {
+                jumpscareDiv.style.display = 'none';
+                loseScreen.classList.remove('hidden');
+            }, 2000);
+        }
+
+        // Show jumpscare
+        function showJumpscare() {
+            jumpscareDiv.style.display = 'flex';
+            const canvas = document.getElementById('jumpscareCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Draw scary face
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(canvas.width/2 - 100, canvas.height/2 - 50, 80, 0, Math.PI * 2);
+            ctx.arc(canvas.width/2 + 100, canvas.height/2 - 50, 80, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#f00';
+            ctx.beginPath();
+            ctx.ellipse(canvas.width/2, canvas.height/2 + 100, 100, 150, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            for (let i = 0; i < 8; i++) {
+                const x = canvas.width/2 - 150 + i * 40;
+                const y = canvas.height/2 + 50 + Math.sin(i) * 20;
+                ctx.beginPath();
+                ctx.moveTo(x, canvas.height/2);
+                ctx.lineTo(x + 20, canvas.height/2 + 150);
+                ctx.lineTo(x + 40, canvas.height/2);
+                ctx.fill();
+            }
+        }
+
+        // Player movement
+        function handlePlayerMovement(delta) {
+            const speed = keys['ShiftLeft'] ? CONFIG.sprintSpeed : CONFIG.playerSpeed;
+            const moveSpeed = speed * delta;
+            
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            forward.y = 0;
+            forward.normalize();
+            
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            right.y = 0;
+            right.normalize();
+            
+            const newPos = player.position.clone();
+            
+            if (keys['KeyW']) newPos.add(forward.clone().multiplyScalar(moveSpeed));
+            if (keys['KeyS']) newPos.add(forward.clone().multiplyScalar(-moveSpeed));
+            if (keys['KeyA']) newPos.add(right.clone().multiplyScalar(-moveSpeed));
+            if (keys['KeyD']) newPos.add(right.clone().multiplyScalar(moveSpeed));
+            
+            // Collision detection
+            if (!checkWallCollision(newPos)) {
+                player.position.copy(newPos);
+            }
+            
+            // Update flashlight battery
+            if (gameState.flashlightOn) {
+                const drain = keys['ShiftLeft'] ? CONFIG.sprintDrain : CONFIG.flashlightDrain;
+                gameState.flashlightBattery -= drain * delta * 10;
+                if (gameState.flashlightBattery <= 0) {
+                    gameState.flashlightBattery = 0;
+                    gameState.flashlightOn = false;
+                    player.flashlight.intensity = 0;
+                    showMessage("Flashlight dead!");
+                }
+            } else {
+                gameState.flashlightBattery += CONFIG.flashlightRecharge * delta * 10;
+                if (gameState.flashlightBattery >= 100) {
+                    gameState.flashlightBattery = 100;
+                }
+            }
+            
+            updateUI();
+        }
+
+        // Check wall collision
+        function checkWallCollision(position) {
+            const mazeX = Math.floor((position.x + CONFIG.mazeSize * CONFIG.cellSize / 2) / CONFIG.cellSize);
+            const mazeY = Math.floor((position.z + CONFIG.mazeSize * CONFIG.cellSize / 2) / CONFIG.cellSize);
+            
+            // Check bounds
+            if (mazeX < 0 || mazeX >= CONFIG.mazeSize || mazeY < 0 || mazeY >= CONFIG.mazeSize) {
+                return true;
+            }
+            
+            // Check if wall
+            if (maze[mazeY][mazeX] === 1) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        // Handle camera rotation
+        function handleCameraRotation(delta) {
+            const sensitivity = 0.002;
+            
+            player.rotation.y -= mouseMovement.x * sensitivity;
+            camera.rotation.x -= mouseMovement.y * sensitivity;
+            
+            // Clamp vertical rotation
+            camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+            
+            mouseMovement.x = 0;
+            mouseMovement.y = 0;
+        }
+
+        // Enemy AI
+        function handleEnemy(delta) {
+            if (!enemy || !gameState.isPlaying) return;
+            
+            // Simple chase AI
+            const direction = new THREE.Vector3();
+            direction.subVectors(player.position, enemy.position);
+            direction.y = 0;
+            direction.normalize();
+            
+            const newPos = enemy.position.clone();
+            newPos.add(direction.multiplyScalar(CONFIG.enemySpeed * delta));
+            
+            // Basic collision avoidance
+            if (!checkWallCollision(newPos)) {
+                enemy.position.copy(newPos);
+                enemy.lookAt(player.position);
+            } else {
+                // Try to find alternative path
+                enemy.rotation.y += delta;
+            }
+            
+            // Check if enemy caught player
+            const distance = enemy.position.distanceTo(player.position);
+            if (distance < 1.5) {
+                // Sanity drain when enemy is close
+                gameState.sanity -= CONFIG.sanityDrain * 3 * delta;
+                
+                if (gameState.sanity <= 0) {
+                    loseGame("Your mind shattered in the darkness...");
+                }
+            }
+            
+            updateUI();
+        }
+
+        // Animate items
+        function animateItems(delta) {
+            const time = Date.now() * 0.001;
+            
+            for (const item of items) {
+                if (!item.collected) {
+                    item.mesh.rotation.y = time;
+                    item.mesh.position.y = item.originalY + Math.sin(time * 2) * 0.2;
+                }
+            }
+        }
+
+        // Update minimap
+        function updateMinimap() {
+            const ctx = minimapCtx;
+            const size = 150;
+            const cellSize = size / CONFIG.mazeSize;
+            
+            ctx.clearRect(0, 0, size, size);
+            
+            // Draw maze
+            for (let y = 0; y < CONFIG.mazeSize; y++) {
+                for (let x = 0; x < CONFIG.mazeSize; x++) {
+                    if (maze[y][x] === 1) {
+                        ctx.fillStyle = '#444';
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    } else {
+                        ctx.fillStyle = '#111';
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+            
+            // Draw items
+            for (const item of items) {
+                if (!item.collected) {
+                    const mx = (item.mesh.position.x + CONFIG.mazeSize * CONFIG.cellSize / 2) / CONFIG.cellSize;
+                    const my = (item.mesh.position.z + CONFIG.mazeSize * CONFIG.cellSize / 2) / CONFIG.cellSize;
+                    ctx.fillStyle = '#ff0';
+                    ctx.beginPath();
+                    ctx.arc(mx * cellSize, my * cellSize, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Draw player
+            const px = (player.position.x + CONFIG.mazeSize * CONFIG.cellSize / 2) / CONFIG.cellSize;
+            const py = (player.position.z + CONFIG.mazeSize * CONFIG.cellSize / 2) / CONFIG.cellSize;
+            ctx.fillStyle = '#0f0';
+            ctx.beginPath();
+            ctx.arc(px * cellSize, py * cellSize, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw enemy
+            const ex = (enemy.position.x + CONFIG.mazeSize * CONFIG.cellSize / 2) / CONFIG.cellSize;
+            const ey = (enemy.position.z + CONFIG.mazeSize * CONFIG.cellSize / 2) / CONFIG.cellSize;
+            ctx.fillStyle = '#f00';
+            ctx.beginPath();
+            ctx.arc(ex * cellSize, ey * cellSize, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Window resize handler
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Main animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = Math.min(clock.getDelta(), 0.1);
+            
+            if (gameState.isPlaying) {
+                handlePlayerMovement(delta);
+                handleCameraRotation(delta);
+                handleEnemy(delta);
+                animateItems(delta);
+                updateTime();
+                updateMinimap();
+                
+                // Passive sanity drain
+                if (!gameState.flashlightOn) {
+                    gameState.sanity -= CONFIG.sanityDrain * delta;
+                }
+                
+                if (gameState.sanity <= 0 && !gameState.lost) {
+                    loseGame("The darkness consumed your mind...");
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // Initialize game
+        init();
+    </script>
+</body>
+</html>
